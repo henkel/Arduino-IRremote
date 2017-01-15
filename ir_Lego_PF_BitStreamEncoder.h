@@ -18,6 +18,7 @@ class LegoPfBitStreamEncoder {
   int repeatCount;
   int messageLength;
 
+ public:
   // HIGH data bit = IR mark + high pause
   // LOW data bit = IR mark + low pause
   static const int LOW_BIT_DURATION = 421;
@@ -32,7 +33,6 @@ class LegoPfBitStreamEncoder {
   static const int MESSAGE_BITS = 18;
   static const int MAX_MESSAGE_LENGTH = 16000;
 
- public:
   void reset(uint16_t data, bool repeatMessage) {
     this->data = data;
     this->repeatMessage = repeatMessage;
@@ -87,6 +87,12 @@ class LegoPfBitStreamEncoder {
     }
   }
 
+  bool verifyChecksum(uint16_t data)
+  {
+    // LRC LLLL xxxx = 0xF xor Nibble 1 xor Nibble 2 xor Nibble 3
+	return ((data & 0x000F) == ((0x000F ^ (data >> 12) ^ (data >> 8) ^ (data >> 4)) & 0x000F));
+  }
+
  private:
   int getDataBitPause() const {
     const int pos = MESSAGE_BITS - 2 - messageBitIdx;
@@ -102,12 +108,12 @@ class LegoPfBitStreamEncoder {
     }
   }
 
-  int getRepeatStopPause() const {
+  long getRepeatStopPause() const {
     if (repeatCount == 0 || repeatCount == 1) {
-      return STOP_PAUSE_DURATION + 5 * MAX_MESSAGE_LENGTH - messageLength;
+      return STOP_PAUSE_DURATION + 5L * MAX_MESSAGE_LENGTH - messageLength;
     } else if (repeatCount == 2 || repeatCount == 3) {
       return STOP_PAUSE_DURATION
-             + (6 + 2 * getChannelId()) * MAX_MESSAGE_LENGTH - messageLength;
+             + (6L + 2L * getChannelId()) * MAX_MESSAGE_LENGTH - messageLength;
     } else {
       return STOP_PAUSE_DURATION;
     }
